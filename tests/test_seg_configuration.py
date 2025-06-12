@@ -254,37 +254,21 @@ class TestSAM2Config(unittest.TestCase):
     
     def test_custom_validation(self):
         """測試 SAM2 特定配置驗證"""
-        # 測試缺少必需配置項
-        with self.assertRaises(ValueError) as context:
-            SAM2Config(seg_type="sam2", seg_config={})
-        self.assertIn("Missing required key", str(context.exception))
+        # 測試無效的配置類型
+        with self.assertRaises(TypeError) as context:
+            SAM2Config(seg_type="sam2", seg_config="invalid")
+        self.assertIn("must be a dictionary", str(context.exception))
         
-        # 測試缺少 image_encoder
-        invalid_config = {
-            "prompt_encoder": {},
-            "mask_decoder": {}
+        # 測試配置合併
+        custom_config = {
+            "image_encoder": {"type": "custom_vit"}
         }
-        with self.assertRaises(ValueError) as context:
-            SAM2Config(seg_type="sam2", seg_config=invalid_config)
-        self.assertIn("image_encoder", str(context.exception))
-        
-        # 測試缺少 prompt_encoder
-        invalid_config = {
-            "image_encoder": {},
-            "mask_decoder": {}
-        }
-        with self.assertRaises(ValueError) as context:
-            SAM2Config(seg_type="sam2", seg_config=invalid_config)
-        self.assertIn("prompt_encoder", str(context.exception))
-        
-        # 測試缺少 mask_decoder
-        invalid_config = {
-            "image_encoder": {},
-            "prompt_encoder": {}
-        }
-        with self.assertRaises(ValueError) as context:
-            SAM2Config(seg_type="sam2", seg_config=invalid_config)
-        self.assertIn("mask_decoder", str(context.exception))
+        config = SAM2Config(seg_type="sam2", seg_config=custom_config)
+        # 驗證用戶配置覆蓋了默認值
+        self.assertEqual(config.seg_config["image_encoder"]["type"], "custom_vit")
+        # 驗證其他配置保持默認值
+        self.assertIn("prompt_encoder", config.seg_config)
+        self.assertIn("mask_decoder", config.seg_config)
     
     def test_default_init(self):
         """測試默認配置初始化"""
@@ -331,26 +315,21 @@ class TestOtherSegConfig(unittest.TestCase):
     
     def test_custom_validation(self):
         """測試其他分割模型特定配置驗證"""
-        # 測試缺少必需配置項
-        with self.assertRaises(ValueError) as context:
-            OtherSegConfig(seg_type="other_seg", seg_config={})
-        self.assertIn("Missing required key", str(context.exception))
+        # 測試無效的配置類型
+        with self.assertRaises(TypeError) as context:
+            OtherSegConfig(seg_type="other_seg", seg_config="invalid")
+        self.assertIn("must be a dictionary", str(context.exception))
         
-        # 測試缺少 encoder
-        invalid_config = {
-            "decoder": {"type": "fpn"}
+        # 測試配置合併
+        custom_config = {
+            "encoder": {"type": "custom_encoder"}
         }
-        with self.assertRaises(ValueError) as context:
-            OtherSegConfig(seg_type="other_seg", seg_config=invalid_config)
-        self.assertIn("encoder", str(context.exception))
-        
-        # 測試缺少 decoder
-        invalid_config = {
-            "encoder": {"type": "resnet"}
-        }
-        with self.assertRaises(ValueError) as context:
-            OtherSegConfig(seg_type="other_seg", seg_config=invalid_config)
-        self.assertIn("decoder", str(context.exception))
+        config = OtherSegConfig(seg_type="other_seg", seg_config=custom_config)
+        # 驗證用戶配置覆蓋了默認值
+        self.assertEqual(config.seg_config["encoder"]["type"], "custom_encoder")
+        # 驗證其他配置保持默認值
+        self.assertIn("decoder", config.seg_config)
+        self.assertEqual(config.seg_config["decoder"]["type"], "fpn")  # 驗證默認值保持不變
     
     def test_default_init(self):
         """測試默認配置初始化"""
@@ -411,6 +390,13 @@ class TestSegConfigFactory(unittest.TestCase):
             model_type = "test_model"
             def _validate_custom_config(self):
                 pass
+        
+        # 註冊默認配置
+        test_default_config = {
+            "encoder": {"type": "test_encoder"},
+            "decoder": {"type": "test_decoder"}
+        }
+        SegConfigRegistry.register("test_model", test_default_config)
         
         # 註冊配置類
         SegConfigFactory.register_config("test_model", TestConfig)
@@ -493,7 +479,8 @@ class TestCreateSegConfig(unittest.TestCase):
             seg_type="sam2",
             image_size=2048,
             patch_size=32,
-            hidden_size=1024
+            hidden_size=1024,
+            num_attention_heads=16
         )
         self.assertEqual(config.image_size, 2048)
         self.assertEqual(config.patch_size, 32)
