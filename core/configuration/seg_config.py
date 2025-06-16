@@ -124,7 +124,11 @@ class BaseSegConfig(PretrainedConfig, ABC):
         super().__init__(**kwargs)
         self.seg_type = seg_type
         
-        # 獲取默認配置並與用戶配置合併
+        # 先驗證 seg_config 的類型
+        if seg_config is not None and not isinstance(seg_config, dict):
+            raise TypeError(f"seg_config must be a dictionary, got {type(seg_config)}")
+        
+        # 然後再進行合併
         if seg_config is None:
             seg_config = {}
         try:
