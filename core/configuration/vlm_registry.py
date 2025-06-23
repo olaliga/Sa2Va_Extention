@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Type, Union, Any
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 
@@ -16,6 +16,7 @@ class VLMConfigRegistry:
         _vision_configs: 視覺模型配置類註冊表
         _llm_configs: 語言模型配置類註冊表
         _vlm_configs: VLM 配置類註冊表
+        _default_configs: 用於存儲默認配置字典
     """
     _instance = None
     
@@ -32,6 +33,7 @@ class VLMConfigRegistry:
         self._vision_configs: Dict[str, Type[BaseVisionConfig]] = {}
         self._llm_configs: Dict[str, Type[BaseLLMConfig]] = {}
         self._vlm_configs: Dict[str, Type[PretrainedConfig]] = {}
+        self._default_configs: Dict[str, Dict[str, Any]] = {}
         self._initialized = True
     
     def register_vision_config(
@@ -109,6 +111,24 @@ class VLMConfigRegistry:
         self._vlm_configs[config_type] = config_class
         logger.info(f"Registered VLM config: {config_type}")
     
+    def register_default_config(
+        self,
+        config_type: str,
+        config_dict: Dict[str, Any]
+    ) -> None:
+        """註冊默認配置字典
+        
+        Args:
+            config_type: 配置類型標識符
+            config_dict: 包含 'vision_config' 和 'llm_config' 的字典
+        """
+        if config_type in self._default_configs:
+            logger.warning(
+                f"Overwriting existing default config registration: {config_type}"
+            )
+        self._default_configs[config_type] = config_dict
+        logger.info(f"Registered default config for: {config_type}")
+    
     def get_vision_config_class(
         self,
         config_type: str
@@ -150,6 +170,17 @@ class VLMConfigRegistry:
             配置類，如果未註冊則返回 None
         """
         return self._vlm_configs.get(config_type)
+    
+    def get_default_config(self, config_type: str) -> Optional[Dict[str, Any]]:
+        """獲取默認配置字典
+        
+        Args:
+            config_type: 配置類型標識符
+        
+        Returns:
+            默認配置字典，如果未註冊則返回 None
+        """
+        return self._default_configs.get(config_type)
     
     def list_vision_configs(self) -> List[str]:
         """列出所有註冊的視覺模型配置類型
@@ -210,4 +241,5 @@ class VLMConfigRegistry:
         self._vision_configs.clear()
         self._llm_configs.clear()
         self._vlm_configs.clear()
+        self._default_configs.clear()
         logger.info("Cleared all config registrations") 

@@ -108,7 +108,7 @@ class BaseSegConfig(PretrainedConfig, ABC):
     
     def __init__(
         self,
-        seg_type: str,                    # 模型類型
+        seg_type: str = "sam2",           # 提供默認值，允許無參數初始化
         seg_config: Optional[dict] = None, # 具體模型配置
         image_size: int = 1024,           # 圖像大小
         patch_size: int = 16,             # patch大小
@@ -392,6 +392,9 @@ def create_seg_config(*args, **kwargs) -> BaseSegConfig:
         ...     seg_config={"image_encoder": {...}}
         ... )
     """
+    # 從 kwargs 中取出 seg_type，並移除可能導致重複傳遞的參數
     model_type = kwargs.pop("seg_type", "sam2")
+    kwargs.pop("model_type", None)  # 移除可能存在的 model_type，避免重複傳遞
+    
     return SegConfigFactory.create_config(model_type, **kwargs)
 

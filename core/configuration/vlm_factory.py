@@ -19,7 +19,7 @@ class VLMConfigFactory:
     """
     def __init__(self):
         self.registry = VLMConfigRegistry()
-    
+
     def create_vision_config(
         self,
         config_type: str,
@@ -101,6 +101,7 @@ class VLMConfigFactory:
         Raises:
             ValueError: 如果配置類型未註冊
         """
+        logger.info(f"Creating VLM config of type: {config_type}")
         config_class = self.registry.get_vlm_config_class(config_type)
         if config_class is None:
             raise ValueError(
